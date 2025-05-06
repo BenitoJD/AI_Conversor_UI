@@ -1,0 +1,1194 @@
+﻿@model AI_Conversor.ViewModels.HomeViewModel
+<style>
+    :root {
+        --bg-color: #ffffff;
+        --card-bg: #ffffff;
+        --text-color: #000000;
+        --sub-text: #555555;
+        --user-bg: #000000;
+        --assistant-bg: #ffffff;
+        --border-color: #cccccc;
+        --accent-color: #000000;
+        --accent-hover: #333333;
+        --thinking-color: #000000;
+        --tooltip-bg: rgba(0, 0, 0, 0.9);
+        --transition-speed: 0.3s;
+    }
+
+    [data-theme="dark"] {
+        --bg-color: #000000;
+        --card-bg: #1a1a1a;
+        --text-color: #ffffff;
+        --sub-text: #aaaaaa;
+        --user-bg: #1a1a1a;
+        --assistant-bg: #000000;
+        --border-color: #444444;
+        --accent-color: #ffffff;
+        --accent-hover: #cccccc;
+        --thinking-color: #ffffff;
+        --tooltip-bg: rgba(255, 255, 255, 0.9);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    html, body {
+        height: 100%;
+        background: var(--bg-color);
+        color: var(--text-color);
+        transition: background var(--transition-speed) ease, color var(--transition-speed) ease;
+    }
+
+    a {
+        color: var(--accent-color);
+        text-decoration: none;
+        transition: opacity var(--transition-speed) ease;
+    }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+    /* Layout */
+    .chat-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem 1rem 8rem;
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - 5rem);
+        transition: all var(--transition-speed) ease;
+    }
+
+    /* Header with Theme Toggle and Actions */
+    .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 0 1rem;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .chat-actions {
+        display: flex;
+        gap: 0.8rem;
+        align-items: center;
+    }
+
+    .header-btn {
+        background: none;
+        border: none; /* No border */
+        padding: 0.3rem 0.4rem; /* Compact padding */
+        font-size: 0.75rem;
+        cursor: pointer;
+        color: var(--text-color);
+        display: flex;
+        align-items: center;
+        gap: 0.2rem; /* Tiny space between icon and hidden text */
+        transition: background var(--transition-speed) ease;
+    }
+
+        .header-btn:hover {
+            background: var(--card-bg); /* Subtle hover background */
+            border-radius: 4px;
+        }
+
+    .theme-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.25rem;
+        transition: transform var(--transition-speed) ease;
+    }
+
+        .theme-toggle:hover {
+            transform: rotate(180deg);
+        }
+
+    /* Description Block */
+    .description-block {
+        background: var(--card-bg);
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+        transition: all var(--transition-speed) ease;
+    }
+
+        .description-block h3 {
+            color: var(--text-color);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            transition: color var(--transition-speed) ease;
+        }
+
+        .description-block p {
+            color: var(--sub-text);
+            margin-bottom: 1rem;
+            transition: color var(--transition-speed) ease;
+        }
+
+    /* Messages Area */
+    .messages-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .message-group {
+        width: 100%;
+        padding: 1.5rem 0;
+        transition: background var(--transition-speed) ease;
+        position: relative;
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    .user-group {
+        background-color: var(--bg-color);
+    }
+
+    .assistant-group {
+        background-color: var(--assistant-bg);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .message-actions {
+        position: absolute;
+        right: 1rem;
+        top: 1rem;
+        opacity: 0;
+        transition: opacity var(--transition-speed) ease;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .message-group:hover .message-actions {
+        opacity: 1;
+    }
+
+    .action-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: all var(--transition-speed) ease;
+        padding: 0.3rem;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .action-btn:hover {
+            opacity: 1;
+            background: var(--card-bg);
+            transform: scale(1.1);
+        }
+
+        .action-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-color);
+            transition: transform var(--transition-speed) ease;
+        }
+
+        .action-btn:hover svg {
+            transform: rotate(90deg);
+        }
+
+    .message-content {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 1rem;
+        line-height: 1.6;
+    }
+
+        .message-content p {
+            margin-bottom: 0.75rem;
+        }
+
+            .message-content p:last-child {
+                margin-bottom: 0;
+            }
+
+    .message-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .role-indicator {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-right: 0.5rem;
+    }
+
+    .user-indicator {
+        color: var(--sub-text);
+    }
+
+    .assistant-indicator {
+        color: var(--accent-color);
+    }
+
+    .document-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        color: var(--accent-color);
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        font-weight: 500;
+    }
+
+        .document-toggle:hover {
+            opacity: 0.8;
+            transform: translateX(5px);
+        }
+
+        .document-toggle::before {
+            content: "📄";
+        }
+
+    .document-details {
+        margin-top: 0.75rem;
+        border-top: 1px dashed var(--border-color);
+        padding-top: 0.75rem;
+        display: none;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    .document-source {
+        font-size: 0.75rem;
+        color: var(--sub-text);
+        margin-bottom: 0.5rem;
+        font-style: italic;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+        .document-source::before {
+            content: "📁";
+        }
+
+    .document-content {
+        background: var(--bg-color);
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: var(--text-color);
+        white-space: pre-wrap;
+        word-break: break-word;
+        line-height: 1.4;
+        border: 1px solid var(--border-color);
+        max-height: 300px;
+        overflow-y: auto;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .chat-input-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg-color);
+        border-top: 1px solid var(--border-color);
+        padding: 1rem;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        z-index: 100;
+        transition: all var(--transition-speed) ease;
+    }
+
+    .chat-input-inner {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 0.5rem;
+        position: relative;
+    }
+
+    .form-control {
+        max-width: calc(100% - 100px); /* Leave space for button */
+        /* Allow growth but not beyond reasonable size */
+        min-width: 100px;
+        width: 100%;
+        /* Vertical behavior */
+        min-height: 50px;
+        max-height: 100px;
+        resize: none;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        font-size: 1rem;
+        transition: all var(--transition-speed) ease;
+        background: var(--card-bg);
+        color: var(--text-color);
+        overflow-y: auto;
+    }
+
+        .form-control:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+
+    /* Primary Button - Black & White */
+    .btn-primary {
+        background: var(--accent-color);
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.25rem;
+        font-weight: 600;
+        transition: all var(--transition-speed) ease;
+        color: var(--bg-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 80px;
+    }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+    /* Thinking Animation */
+    .thinking {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .thinking-dot {
+        width: 6px;
+        height: 6px;
+        background-color: var(--thinking-color);
+        border-radius: 50%;
+        animation: thinking-animation 1.4s infinite ease-in-out both;
+    }
+
+        .thinking-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .thinking-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+   
+
+    /* Tooltip */
+    .tooltip {
+        position: relative;
+    }
+
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: auto;
+            min-width: 120px;
+            background-color: var(--tooltip-bg);
+            color: var(--bg-color);
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity var(--transition-speed) ease;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+    /* Export Modal */
+    /* Sleek Export Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 200;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(2px);
+        transition: opacity var(--transition-speed) ease;
+    }
+
+    .modal-content {
+        background-color: var(--card-bg);
+        margin: auto;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+        width: 90%;
+        animation: fadeIn 0.3s ease-out;
+        border: 1px solid var(--border-color);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0.75rem;
+    }
+
+    .modal-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .close-modal {
+        background: transparent;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        color: var(--text-color);
+        transition: transform 0.2s ease;
+    }
+
+      
+
+    .modal-body {
+        margin-bottom: 1.5rem;
+    }
+
+        .modal-body p {
+            font-size: 0.9rem;
+            color: var(--sub-text);
+        }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+
+    .btn-secondary {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-color);
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+    }
+
+        .btn-secondary:hover {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            border-color: var(--accent-color);
+        }
+
+    .btn-primary {
+        background: var(--accent-color);
+        color: var(--bg-color);
+        border: none;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all var(--transition-speed) ease;
+    }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+    /* Error Display */
+    .alert-danger {
+        margin-top: 1rem;
+        border-radius: 8px;
+        background: #f8d7da;
+        color: #842029;
+        padding: 0.75rem 1rem;
+        border: 1px solid #f5c2c7;
+        animation: shake 0.3s ease-in-out;
+    }
+
+    /* Success toast */
+    .toast {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        background: var(--card-bg);
+        color: var(--text-color);
+        border-left: 4px solid var(--accent-color);
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transform: translateX(120%);
+        transition: transform var(--transition-speed) ease;
+    }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+    .toast-icon {
+        color: var(--accent-color);
+        font-size: 1.2rem;
+        animation: bounce 1s infinite alternate;
+    }
+</style>
+
+<div class="chat-container">
+    <div class="chat-header flex items-center justify-between p-3">
+        <h3 class="text-lg font-medium tracking-tight">Conversational AI</h3>
+        <div class="chat-actions flex gap-2">
+            <button id="exportBtn" class="header-btn group" aria-label="Export conversation">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span class="sr-only">Export</span> <!-- Hidden but accessible -->
+            </button>
+            <button id="clearBtn" class="header-btn group" aria-label="Clear conversation">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span class="sr-only">Clear</span> <!-- Hidden but accessible -->
+            </button>
+            <button id="themeToggle" class="theme-toggle relative flex items-center justify-center w-8 h-8 bg-transparent rounded-md hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-all duration-150" aria-label="Toggle dark mode">
+                <svg class="w-4 h-4 dark:hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m0 16.5V19.5m6.364-13.864l-1.591 1.591M5.636 18.364l1.591-1.591M21 12h-2.25m-16.5 0H5.25m13.864 6.364l-1.591-1.591M5.636 5.636l1.591 1.591M12 9a3 3 0 100 6 3 3 0 000-6z" />
+                </svg>
+                <svg class="w-4 h-4 hidden dark:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="description-block">
+        <p>This AI assistant helps you find and analyze information from your documents.</p>
+        <p>Simply type your question and get answers based on the available context.</p>
+        <ul style="margin-top: 0.75rem; padding-left: 1.2rem;">
+            <li style="margin-bottom: 0.4rem;">🔍 Ask questions about your documents</li>
+            <li style="margin-bottom: 0.4rem;">📄 View relevant source documents</li>
+            <li style="margin-bottom: 0.4rem;">💾 Export conversations as CSV</li>
+            <li>🔄 Copy individual messages</li>
+        </ul>
+    </div>
+
+    <div id="messagesArea" class="messages-area"></div>
+
+    <div class="chat-input-container">
+        <div class="chat-input-inner">
+            <form id="askForm" class="input-group">
+                <textarea id="queryInput" class="form-control" placeholder="Ask a question..." aria-label="User query" required autocomplete="off" rows="1"></textarea>
+                <button class="btn btn-primary" type="submit" id="submitButton">Send</button>
+            </form>
+            <div id="errorDisplay" class="alert-danger d-none" role="alert"></div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <!-- Export Modal -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Export Conversation</h4>
+                <button class="close-modal" aria-label="Close modal">×</button>
+            </div>
+            <div class="modal-body">
+                <p>Choose a format to export your conversation:</p>
+            </div>
+            <div class="modal-footer">
+                <button id="copyText" class="btn-secondary">Copy as Text</button>
+                <button id="exportCSV" class="btn-secondary">Download CSV</button>
+                <button id="closeModal" class="btn-primary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div id="successToast" class="toast" role="status" aria-live="polite">
+        <span class="toast-icon">✓</span>
+        <span id="toastMessage">Copied to clipboard!</span>
+    </div>
+</div>
+
+@* @section Scripts {
+    <script src="~/js/site.js"></script>
+} *@
+
+@section Scripts {
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+            themeToggle.setAttribute('aria-label',
+                theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
+            );
+        }
+        setTheme(currentTheme);
+        themeToggle.addEventListener('click', () => {
+            const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        // Helper Functions
+        const askForm = document.getElementById('askForm');
+        const queryInput = document.getElementById('queryInput');
+        const submitButton = document.getElementById('submitButton');
+        const messagesArea = document.getElementById('messagesArea');
+        const errorDisplay = document.getElementById('errorDisplay');
+        const apiBaseUrl = "@Model.FastApiBaseUrl";
+        const streamEndpoint = `${apiBaseUrl}/ask_streaming`;
+        const exportBtn = document.getElementById('exportBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const exportModal = document.getElementById('exportModal');
+        const closeModal = document.getElementById('closeModal');
+        const copyTextBtn = document.getElementById('copyText');
+        const exportCSVBtn = document.getElementById('exportCSV');
+        const successToast = document.getElementById('successToast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // Conversation history
+        let conversationHistory = [];
+
+        // Adjust textarea height automatically
+        queryInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+
+        // Handle enter key press in textarea
+        queryInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!submitButton.disabled && this.value.trim()) {
+                    askForm.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+
+        // Sanitize LLM output with HTML escaping
+        function sanitizeContent(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML
+                .replace(/\*/g, '')
+                .replace(/</g, '<')
+                .replace(/>/g, '>');
+        }
+
+        // Message Handling
+        function appendMessage(role, content, documents = []) {
+            const messageGroup = document.createElement('div');
+            messageGroup.classList.add('message-group', `${role}-group`);
+            const messageContent = document.createElement('div');
+            messageContent.classList.add('message-content');
+            const messageHeader = document.createElement('div');
+            messageHeader.classList.add('message-header');
+
+            // Role indicator
+            const roleIndicator = document.createElement('div');
+            roleIndicator.classList.add('role-indicator', `${role}-indicator`);
+            roleIndicator.textContent = role === 'user' ? 'You' : 'Assistant';
+            messageHeader.appendChild(roleIndicator);
+            messageContent.appendChild(messageHeader);
+
+            // Message actions
+            const messageActions = document.createElement('div');
+            messageActions.classList.add('message-actions');
+            const copyBtn = document.createElement('button');
+            copyBtn.classList.add('action-btn', 'tooltip');
+            copyBtn.setAttribute('aria-label', 'Copy message');
+            copyBtn.innerHTML = `
+                <span class="tooltip-text">Copy message</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+            `;
+                   copyBtn.addEventListener('click', () => {
+            // Get the current content from the message container
+            const contentElement = messageGroup.querySelector('.message-content > div:not(.message-header):not(.document-toggle):not(.document-details):not(.thinking-indicator)');
+            let currentContent = '';
+
+            if (contentElement) {
+                // For HTML content, get the text content which will ignore HTML tags
+                currentContent = contentElement.textContent || '';
+            } else {
+                // Fallback to the original content if element not found
+                currentContent = content;
+            }
+
+            copyToClipboard(currentContent);
+            showToast('Message copied to clipboard!');
+        });
+            messageActions.appendChild(copyBtn);
+            messageGroup.appendChild(messageActions);
+
+            // Message content
+            const contentElement = document.createElement('div');
+            contentElement.innerHTML = sanitizeContent(content).replace(/\n/g, '<br>');
+            messageContent.appendChild(contentElement);
+
+            // Save to conversation history
+            conversationHistory.push({
+                role: role,
+                content: content
+            });
+
+            // Add document toggle if available
+            if (role === 'assistant' && documents?.length > 0) {
+                const toggle = document.createElement('div');
+                toggle.className = 'document-toggle';
+                toggle.textContent = `Show ${documents.length} source document${documents.length !== 1 ? 's' : ''}`;
+
+                const detailsContainer = document.createElement('div');
+                detailsContainer.className = 'document-details';
+
+                documents.forEach(doc => {
+                    const docContainer = document.createElement('div');
+                    const sourceElement = document.createElement('div');
+                    sourceElement.className = 'document-source';
+                    sourceElement.textContent = `Source: ${doc.path || 'Unknown path'}`;
+
+                    const contentElement = document.createElement('pre');
+                    contentElement.className = 'document-content';
+                    contentElement.textContent = doc.content || 'No content available';
+
+                    docContainer.appendChild(sourceElement);
+                    docContainer.appendChild(contentElement);
+                    detailsContainer.appendChild(docContainer);
+                });
+
+                toggle.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const isVisible = detailsContainer.style.display === 'block';
+                    detailsContainer.style.display = isVisible ? 'none' : 'block';
+                    toggle.textContent = isVisible
+                        ? `Show ${documents.length} source document${documents.length !== 1 ? 's' : ''}`
+                        : `Hide ${documents.length} source document${documents.length !== 1 ? 's' : ''}`;
+                });
+
+                messageContent.appendChild(toggle);
+                messageContent.appendChild(detailsContainer);
+            }
+
+            messageGroup.appendChild(messageContent);
+            messagesArea.appendChild(messageGroup);
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function updateLastAssistantMessage(token) {
+            const lastGroup = messagesArea.lastElementChild;
+            if (lastGroup && lastGroup.classList.contains('assistant-group')) {
+                const contentElement = lastGroup.querySelector('.message-content > div:not(.message-header):not(.document-toggle):not(.document-details):not(.thinking-indicator)');
+                if (contentElement) {
+                    const sanitizedToken = sanitizeContent(token);
+                    contentElement.innerHTML += sanitizedToken.replace(/\n/g, '<br>');
+                }
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+                // Update conversation history with the new token
+                if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === 'assistant') {
+                    conversationHistory[conversationHistory.length - 1].content += token;
+                }
+            }
+        }
+
+        function setLastAssistantMessageContent(content) {
+            const lastGroup = messagesArea.lastElementChild;
+            if (lastGroup && lastGroup.classList.contains('assistant-group')) {
+                const contentElement = lastGroup.querySelector('.message-content > div:not(.message-header):not(.document-toggle):not(.document-details):not(.thinking-indicator)');
+                if (contentElement) {
+                    const sanitizedContent = sanitizeContent(content).replace(/\n/g, '<br>');
+                    contentElement.innerHTML = sanitizedContent;
+                }
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+
+            if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === 'assistant') {
+                conversationHistory[conversationHistory.length - 1].content = content;
+            }
+        }
+
+        function appendThinkingIndicator() {
+            const lastGroup = messagesArea.lastElementChild;
+            if (lastGroup && lastGroup.classList.contains('assistant-group')) {
+                const messageContent = lastGroup.querySelector('.message-content');
+                const existingIndicator = messageContent.querySelector('.thinking-indicator');
+                if (!existingIndicator) {
+                    const indicator = document.createElement('div');
+                    indicator.className = 'thinking-indicator';
+                    indicator.innerHTML = '<span>Thinking</span>';
+                    messageContent.appendChild(indicator);
+                }
+            }
+        }
+
+        function removeThinkingIndicator() {
+            const lastGroup = messagesArea.lastElementChild;
+            if (lastGroup && lastGroup.classList.contains('assistant-group')) {
+                const indicator = lastGroup.querySelector('.thinking-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+        }
+
+        function renderContext(contextList) {
+            const lastGroup = messagesArea.lastElementChild;
+            if (lastGroup && lastGroup.classList.contains('assistant-group')) {
+                const existingToggle = lastGroup.querySelector('.document-toggle');
+                const existingDetails = lastGroup.querySelector('.document-details');
+                const messageContent = lastGroup.querySelector('.message-content');
+
+                if (existingToggle && existingDetails) {
+                    existingDetails.remove();
+                    existingToggle.remove();
+                }
+
+                if (contextList?.length > 0) {
+                    const toggle = document.createElement('div');
+                    toggle.className = 'document-toggle';
+                    toggle.textContent = `Show ${contextList.length} source document${contextList.length !== 1 ? 's' : ''}`;
+
+                    const detailsContainer = document.createElement('div');
+                    detailsContainer.className = 'document-details';
+
+                    contextList.forEach(doc => {
+                        const docContainer = document.createElement('div');
+                        const sourceElement = document.createElement('div');
+                        sourceElement.className = 'document-source';
+                        sourceElement.textContent = `Source: ${doc.path || 'Unknown path'}`;
+
+                        const contentElement = document.createElement('pre');
+                        contentElement.className = 'document-content';
+                        contentElement.textContent = doc.content || 'No content available';
+
+                        docContainer.appendChild(sourceElement);
+                        docContainer.appendChild(contentElement);
+                        detailsContainer.appendChild(docContainer);
+                    });
+
+                    toggle.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const isVisible = detailsContainer.style.display === 'block';
+                        detailsContainer.style.display = isVisible ? 'none' : 'block';
+                        toggle.textContent = isVisible
+                            ? `Show ${contextList.length} source document${contextList.length !== 1 ? 's' : ''}`
+                            : `Hide ${contextList.length} source document${contextList.length !== 1 ? 's' : ''}`;
+                    });
+
+                    messageContent.appendChild(toggle);
+                    messageContent.appendChild(detailsContainer);
+                }
+            }
+        }
+
+        function showError(message) {
+            errorDisplay.textContent = `Error: ${message}`;
+            errorDisplay.classList.remove('d-none');
+            submitButton.disabled = false;
+            errorDisplay.style.animation = 'shake 0.3s ease-in-out';
+            setTimeout(() => errorDisplay.style.animation = '', 300);
+        }
+
+        // Generate a unique session ID when the page loads
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+        }
+
+        // Store or retrieve session ID from localStorage
+        function getOrCreateSessionId() {
+            let sessionId = localStorage.getItem('rag_session_id');
+            if (!sessionId) {
+                sessionId = generateSessionId();
+                localStorage.setItem('rag_session_id', sessionId);
+            }
+            return sessionId;
+        }
+                function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => console.log("Text copied successfully using Clipboard API."))
+                    .catch(fallbackCopy);
+            } else {
+                fallbackCopy();
+            }
+
+            function fallbackCopy() {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = 0;
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+
+                try {
+                    const successful = document.execCommand && document.execCommand('copy');
+                    if (!successful) {
+                        throw new Error("execCommand failed");
+                    }
+                    console.log("Text copied using fallback execCommand.");
+                } catch (err) {
+                    console.warn("All copy methods failed. Prompting user.");
+                    alert("Please press Ctrl+C (Cmd+C on Mac) to copy the text manually.");
+                }
+
+                document.body.removeChild(textarea);
+            }
+        }
+
+
+        // Show toast message with animation
+        function showToast(message) {
+            toastMessage.textContent = message;
+            successToast.classList.add('show');
+            setTimeout(() => {
+                successToast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Convert conversation to CSV with proper escaping
+        function convertToCSV(conversation) {
+            const header = "Role,Content\n";
+            const rows = conversation.map(msg => {
+                const escapedContent = msg.content
+                    .replace(/"/g, '""')
+                    .replace(/\n/g, ' ')
+                    .replace(/,/g, '; ');
+                return `"${msg.role}","${escapedContent}"`;
+            }).join('\n');
+            return header + rows;
+        }
+
+        // Download CSV file
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Modal functions
+        function openModal() {
+            exportModal.style.display = 'flex';
+            closeModal.focus();
+        }
+
+        function closeModalFunc() {
+            exportModal.style.display = 'none';
+            exportBtn.focus();
+        }
+
+        // Event listeners for modal
+        exportBtn.addEventListener('click', openModal);
+        closeModal.addEventListener('click', closeModalFunc);
+        document.querySelector('.close-modal').addEventListener('click', closeModalFunc);
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === exportModal) {
+                closeModalFunc();
+            }
+        });
+
+        // Export functionality
+        copyTextBtn.addEventListener('click', () => {
+            const textContent = conversationHistory.map(msg => {
+                return `${msg.role === 'user' ? 'You' : 'Assistant'}:\n${msg.content}\n`;
+            }).join('\n');
+            copyToClipboard(textContent);
+            showToast('Conversation copied to clipboard as text!');
+            closeModalFunc();
+        });
+
+        exportCSVBtn.addEventListener('click', () => {
+            const csvContent = convertToCSV(conversationHistory);
+            const date = new Date().toISOString().slice(0, 10);
+            downloadCSV(csvContent, `conversation_${date}.csv`);
+            showToast('Conversation downloaded as CSV!');
+            closeModalFunc();
+        });
+
+        // Clear conversation
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear the conversation?')) {
+                messagesArea.innerHTML = '';
+                conversationHistory = [];
+                localStorage.removeItem('rag_session_id');
+                showToast('Conversation cleared!');
+            }
+        });
+
+        // Main Event Handler
+        askForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            submitButton.disabled = true;
+            errorDisplay.classList.add('d-none');
+
+            appendMessage('user', query);
+            queryInput.value = '';
+            queryInput.style.height = 'auto';
+
+            // Show "Thinking" indicator in the button
+            submitButton.innerHTML = `
+                <div class="thinking">
+                    <div class="thinking-dot"></div>
+                    <div class="thinking-dot"></div>
+                    <div class="thinking-dot"></div>
+                </div>
+            `;
+
+            appendMessage('assistant', '');
+            appendThinkingIndicator();
+
+            let currentAnswer = '';
+            let receivedContext = null;
+            const sessionId = getOrCreateSessionId();
+            let streamEnded = false;
+            let hasError = false;
+
+            try {
+                const response = await fetch(streamEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        session_id: sessionId
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    throw new Error(`API Error (${response.status}): ${errorBody || response.statusText}`);
+                }
+
+                if (!response.body) {
+                    throw new Error("Response body is missing.");
+                }
+
+                const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+                let buffer = '';
+
+                // Remove thinking indicator once we start getting content
+                removeThinkingIndicator();
+
+                while (!streamEnded) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        streamEnded = true;
+                        break;
+                    }
+
+                    buffer += value;
+                    // Handle different newline formats
+                    let lines = buffer.split(/\r?\n/);
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            const dataStr = line.substring(5).trim();
+
+                            if (dataStr === '[DONE]') {
+                                streamEnded = true;
+                                break;
+                            }
+
+                            try {
+                                const jsonData = JSON.parse(dataStr);
+
+                                if (jsonData.context && Array.isArray(jsonData.context)) {
+                                    receivedContext = jsonData.context;
+                                    renderContext(receivedContext);
+                                } else if (jsonData.token) {
+                                    currentAnswer += jsonData.token;
+                                    updateLastAssistantMessage(jsonData.token);
+                                } else if (jsonData.error) {
+                                    console.error('Stream error:', jsonData.error, jsonData.details);
+                                    showError(`Stream Error: ${jsonData.error} ${jsonData.details || ''}`);
+                                    streamEnded = true;
+                                    hasError = true;
+                                    break;
+                                }
+                            } catch (parseError) {
+                                console.warn(`Failed to parse: '${dataStr}'`, parseError);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+                if (currentAnswer === '') {
+                    setLastAssistantMessageContent(`Error: ${error.message}`);
+                } else {
+                    updateLastAssistantMessage(`<br>Error: ${error.message}`);
+                }
+                hasError = true;
+            } finally {
+                // Restore submit button
+                submitButton.innerHTML = 'Send';
+                submitButton.disabled = false;
+
+                // If no response was received, show a default message
+                if (currentAnswer === '' && !hasError) {
+                    setLastAssistantMessageContent('No response received. Please try again.');
+                }
+            }
+        });
+    </script>
+}
