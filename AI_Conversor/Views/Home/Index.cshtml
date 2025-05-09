@@ -74,6 +74,8 @@
         transition: all var(--transition-speed) ease;
     }
 
+    
+
     .chat-actions {
         display: flex;
         gap: 0.8rem;
@@ -569,6 +571,38 @@
         font-size: 1.2rem;
         animation: bounce 1s infinite alternate;
     }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--text-color);
+        opacity: 0.8;
+    }
+
+        .status-indicator span:after {
+            content: '';
+            display: inline-block;
+            animation: ellipsis-animation 1.5s infinite;
+        }
+
+    .extraction-indicator {
+        margin: 0.75rem 0;
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: var(--accent-color);
+        padding: 0.25rem 0;
+        border-top: 1px dotted var(--border-color);
+        border-bottom: 1px dotted var(--border-color);
+    }
+
+        .extraction-indicator span:after {
+            content: '';
+            display: inline-block;
+            animation: ellipsis-animation 1.5s infinite;
+        }
 </style>
 
 <div class="chat-container">
@@ -852,18 +886,8 @@
             }
         }
 
-        function appendThinkingIndicator() {
-            const lastGroup = messagesArea.lastElementChild;
-            if (lastGroup && lastGroup.classList.contains('assistant-group')) {
-                const messageContent = lastGroup.querySelector('.message-content');
-                const existingIndicator = messageContent.querySelector('.thinking-indicator');
-                if (!existingIndicator) {
-                    const indicator = document.createElement('div');
-                    indicator.className = 'thinking-indicator';
-                    indicator.innerHTML = '<span>Thinking</span>';
-                    messageContent.appendChild(indicator);
-                }
-            }
+         function appendThinkingIndicator() {
+            updateAssistantMessageStatus('thinking');
         }
 
         function removeThinkingIndicator() {
@@ -875,7 +899,15 @@
                 }
             }
         }
-
+                       function removeStatusIndicator() {
+            const lastGroup = messagesArea.lastElementChild;
+            if (lastGroup && lastGroup.classList.contains('assistant-group')) {
+                const indicator = lastGroup.querySelector('.status-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+        }
         function renderContext(contextList) {
             const lastGroup = messagesArea.lastElementChild;
             if (lastGroup && lastGroup.classList.contains('assistant-group')) {
@@ -1067,9 +1099,30 @@
                 showToast('Conversation cleared!');
             }
         });
+            function updateAssistantMessageStatus(status) {
+            const lastGroup = messagesArea.lastElementChild;
+            if (lastGroup && lastGroup.classList.contains('assistant-group')) {
+                // Remove any existing status indicators
+                const existingIndicator = lastGroup.querySelector('.status-indicator');
+                if (existingIndicator) {
+                    existingIndicator.remove();
+                }
 
-        // Main Event Handler
-        askForm.addEventListener('submit', async (event) => {
+                // Add new status indicator
+                const messageContent = lastGroup.querySelector('.message-content');
+                const statusIndicator = document.createElement('div');
+                statusIndicator.className = 'status-indicator';
+
+                if (status === 'thinking') {
+                    statusIndicator.innerHTML = '<span>🔍 Gathering insights you can use</span>';
+                } else if (status === 'extracting') {
+                    statusIndicator.innerHTML = '<span>💭 Thinking about how best to help</span>';
+                }
+
+                messageContent.appendChild(statusIndicator);
+            }
+        }
+                     askForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const query = queryInput.value.trim();
             if (!query) return;
@@ -1089,7 +1142,6 @@
                     <div class="thinking-dot"></div>
                 </div>
             `;
-
             appendMessage('assistant', '');
             appendThinkingIndicator();
 
@@ -1098,6 +1150,7 @@
             const sessionId = getOrCreateSessionId();
             let streamEnded = false;
             let hasError = false;
+            let extractionPhaseStarted = false;
 
             try {
                 const response = await fetch(streamEndpoint, {
@@ -1123,9 +1176,6 @@
 
                 const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
                 let buffer = '';
-
-                // Remove thinking indicator once we start getting content
-                removeThinkingIndicator();
 
                 while (!streamEnded) {
                     const { value, done } = await reader.read();
@@ -1154,7 +1204,28 @@
                                 if (jsonData.context && Array.isArray(jsonData.context)) {
                                     receivedContext = jsonData.context;
                                     renderContext(receivedContext);
+
+                                    // Change status to EXTRACTING when context is received
+                                    // but only if no tokens have been received yet
+                                    if (!extractionPhaseStarted && currentAnswer === '') {
+                                        extractionPhaseStarted = true;
+                                        removeStatusIndicator(); // Remove thinking indicator
+                                        updateAssistantMessageStatus('extracting'); // Add extracting indicator
+                                    }
                                 } else if (jsonData.token) {
+                                    // When first token arrives, remove the extracting indicator
+                                    if (currentAnswer === '') {
+                                        removeStatusIndicator();
+                                        // Also remove the extraction indicator between assistant and documents
+                                        const lastGroup = messagesArea.lastElementChild;
+                                        if (lastGroup && lastGroup.classList.contains('assistant-group')) {
+                                            const extractionIndicator = lastGroup.querySelector('.message-content .extraction-indicator');
+                                            if (extractionIndicator) {
+                                                extractionIndicator.remove();
+                                            }
+                                        }
+                                    }
+
                                     currentAnswer += jsonData.token;
                                     updateLastAssistantMessage(jsonData.token);
                                 } else if (jsonData.error) {
@@ -1184,11 +1255,15 @@
                 submitButton.innerHTML = 'Send';
                 submitButton.disabled = false;
 
+                // Remove any remaining status indicators
+                removeStatusIndicator();
+
                 // If no response was received, show a default message
                 if (currentAnswer === '' && !hasError) {
                     setLastAssistantMessageContent('No response received. Please try again.');
                 }
             }
         });
+
     </script>
 }
