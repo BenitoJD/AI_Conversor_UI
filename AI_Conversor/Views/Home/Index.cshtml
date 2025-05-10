@@ -1099,7 +1099,7 @@
                 showToast('Conversation cleared!');
             }
         });
-            function updateAssistantMessageStatus(status) {
+                    function updateAssistantMessageStatus(status) {
             const lastGroup = messagesArea.lastElementChild;
             if (lastGroup && lastGroup.classList.contains('assistant-group')) {
                 // Remove any existing status indicators
@@ -1108,18 +1108,24 @@
                     existingIndicator.remove();
                 }
 
-                // Add new status indicator
+                // Add new status indicator before the document toggle
                 const messageContent = lastGroup.querySelector('.message-content');
+                const documentToggle = messageContent.querySelector('.document-toggle');
                 const statusIndicator = document.createElement('div');
                 statusIndicator.className = 'status-indicator';
 
                 if (status === 'thinking') {
-                    statusIndicator.innerHTML = '<span>🔍 Gathering insights you can use</span>';
+                    statusIndicator.innerHTML = '<span><em>🔍 Gathering insights you can use</em></span>';
                 } else if (status === 'extracting') {
-                    statusIndicator.innerHTML = '<span>💭 Thinking about how best to help</span>';
+                    statusIndicator.innerHTML = '<span><em>💭 Thinking about how best to help</em></span>';
                 }
 
-                messageContent.appendChild(statusIndicator);
+                // Insert before document toggle if it exists, otherwise append to content
+                if (documentToggle) {
+                    messageContent.insertBefore(statusIndicator, documentToggle);
+                } else {
+                    messageContent.appendChild(statusIndicator);
+                }
             }
         }
                      askForm.addEventListener('submit', async (event) => {
