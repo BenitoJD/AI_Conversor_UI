@@ -282,6 +282,61 @@
             content: "📁";
         }
 
+    .code-card {
+        margin: 1rem 0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        background-color: var(--color-background-secondary);
+        border: 1px solid var(--color-border);
+    }
+
+    .code-card-header {
+        padding: 0.5rem 1rem;
+        background-color: var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .code-language {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+    }
+
+    .code-block {
+        margin: 0;
+        padding: 1rem;
+        overflow-x: auto;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        background-color: var(--color-background-tertiary);
+        border-radius: 0 0 8px 8px;
+    }
+
+    .mermaid-container {
+        padding: 1rem;
+        display: flex;
+        justify-content: center;
+        background-color: var(--color-background-tertiary);
+    }
+
+    /* Dark theme adjustments */
+    [data-theme="dark"] .code-card {
+        background-color: var(--color-background-tertiary);
+    }
+
+    [data-theme="dark"] .code-card-header {
+        background-color: var(--color-background-secondary);
+    }
+
+    [data-theme="dark"] .code-block,
+    [data-theme="dark"] .mermaid-container {
+        background-color: var(--color-background-quaternary);
+    }
     .document-content {
         background: var(--bg-color);
         border-radius: 6px;
@@ -684,10 +739,6 @@
     </div>
 </div>
 
-@* @section Scripts {
-    <script src="~/js/site.js"></script>
-} *@
-
 @section Scripts {
     <script>
         // Theme Toggle
@@ -743,7 +794,7 @@
             }
         });
 
-               // Sanitize LLM output with HTML escaping and markdown processing
+        // Sanitize LLM output with HTML escaping and markdown processing
         function sanitizeContent(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -756,6 +807,28 @@
 
             // Process markdown-style bold (**text** or __text__)
             sanitized = sanitized.replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>');
+
+            // Detect code blocks and add special handling for them
+            sanitized = sanitized.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, language, code) {
+                return `<div class="code-card">
+                    <div class="code-card-header">
+                        <span class="code-language">${language || 'Code'}</span>
+                    </div>
+                    <pre class="code-block ${language ? 'language-' + language : ''}"><code>${code}</code></pre>
+                </div>`;
+            });
+
+            // Detect Mermaid diagrams
+            sanitized = sanitized.replace(/```mermaid\n([\s\S]*?)```/g, function(match, code) {
+                return `<div class="code-card">
+                    <div class="code-card-header">
+                        <span class="code-language">Mermaid Diagram</span>
+                    </div>
+                    <div class="mermaid-container">
+                        <pre class="mermaid">${code}</pre>
+                    </div>
+                </div>`;
+            });
 
             return sanitized;
         }
@@ -788,22 +861,22 @@
                     <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
                 </svg>
             `;
-                   copyBtn.addEventListener('click', () => {
-            // Get the current content from the message container
-            const contentElement = messageGroup.querySelector('.message-content > div:not(.message-header):not(.document-toggle):not(.document-details):not(.thinking-indicator)');
-            let currentContent = '';
+            copyBtn.addEventListener('click', () => {
+                // Get the current content from the message container
+                const contentElement = messageGroup.querySelector('.message-content > div:not(.message-header):not(.document-toggle):not(.document-details):not(.thinking-indicator)');
+                let currentContent = '';
 
-            if (contentElement) {
-                // For HTML content, get the text content which will ignore HTML tags
-                currentContent = contentElement.textContent || '';
-            } else {
-                // Fallback to the original content if element not found
-                currentContent = content;
-            }
+                if (contentElement) {
+                    // For HTML content, get the text content which will ignore HTML tags
+                    currentContent = contentElement.textContent || '';
+                } else {
+                    // Fallback to the original content if element not found
+                    currentContent = content;
+                }
 
-            copyToClipboard(currentContent);
-            showToast('Message copied to clipboard!');
-        });
+                copyToClipboard(currentContent);
+                showToast('Message copied to clipboard!');
+            });
             messageActions.appendChild(copyBtn);
             messageGroup.appendChild(messageActions);
 
@@ -858,9 +931,18 @@
             messageGroup.appendChild(messageContent);
             messagesArea.appendChild(messageGroup);
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+            // Initialize Mermaid diagrams if they exist
+            if (window.mermaid && contentElement.querySelector('.mermaid')) {
+                try {
+                    window.mermaid.init(undefined, contentElement.querySelectorAll('.mermaid'));
+                } catch (e) {
+                    console.error('Mermaid initialization error:', e);
+                }
+            }
         }
 
-              function updateLastAssistantMessage(token) {
+        function updateLastAssistantMessage(token) {
             const lastGroup = messagesArea.lastElementChild;
             if (lastGroup && lastGroup.classList.contains('assistant-group')) {
                 const contentElement = lastGroup.querySelector('.message-content > div:not(.message-header):not(.document-toggle):not(.document-details):not(.thinking-indicator)');
@@ -869,9 +951,18 @@
                     contentElement.innerHTML += sanitizedToken.replace(/\n/g, '<br>');
 
                     // Reprocess all content to correctly format multi-token markdown elements
-                    if (token.includes('**') || token.includes('#')) {
+                    if (token.includes('**') || token.includes('#') || token.includes('```')) {
                         const fullContent = conversationHistory[conversationHistory.length - 1].content;
                         contentElement.innerHTML = sanitizeContent(fullContent).replace(/\n/g, '<br>');
+
+                        // Re-initialize Mermaid diagrams if any new ones are added
+                        if (window.mermaid && contentElement.querySelector('.mermaid')) {
+                            try {
+                                window.mermaid.init(undefined, contentElement.querySelectorAll('.mermaid'));
+                            } catch (e) {
+                                console.error('Mermaid initialization error:', e);
+                            }
+                        }
                     }
                 }
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -882,13 +973,23 @@
                 }
             }
         }
-                function setLastAssistantMessageContent(content) {
+
+        function setLastAssistantMessageContent(content) {
             const lastGroup = messagesArea.lastElementChild;
             if (lastGroup && lastGroup.classList.contains('assistant-group')) {
                 const contentElement = lastGroup.querySelector('.message-content > div:not(.message-header):not(.document-toggle):not(.document-details):not(.thinking-indicator)');
                 if (contentElement) {
                     const sanitizedContent = sanitizeContent(content).replace(/\n/g, '<br>');
                     contentElement.innerHTML = sanitizedContent;
+
+                    // Initialize Mermaid diagrams if they exist
+                    if (window.mermaid && contentElement.querySelector('.mermaid')) {
+                        try {
+                            window.mermaid.init(undefined, contentElement.querySelectorAll('.mermaid'));
+                        } catch (e) {
+                            console.error('Mermaid initialization error:', e);
+                        }
+                    }
                 }
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             }
@@ -898,7 +999,7 @@
             }
         }
 
-         function appendThinkingIndicator() {
+        function appendThinkingIndicator() {
             updateAssistantMessageStatus('thinking');
         }
 
@@ -911,7 +1012,8 @@
                 }
             }
         }
-                       function removeStatusIndicator() {
+
+        function removeStatusIndicator() {
             const lastGroup = messagesArea.lastElementChild;
             if (lastGroup && lastGroup.classList.contains('assistant-group')) {
                 const indicator = lastGroup.querySelector('.status-indicator');
@@ -920,6 +1022,7 @@
                 }
             }
         }
+
         function renderContext(contextList) {
             const lastGroup = messagesArea.lastElementChild;
             if (lastGroup && lastGroup.classList.contains('assistant-group')) {
@@ -992,7 +1095,8 @@
             }
             return sessionId;
         }
-                function copyToClipboard(text) {
+
+        function copyToClipboard(text) {
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(text)
                     .then(() => console.log("Text copied successfully using Clipboard API."))
@@ -1024,7 +1128,6 @@
                 document.body.removeChild(textarea);
             }
         }
-
 
         // Show toast message with animation
         function showToast(message) {
@@ -1111,7 +1214,8 @@
                 showToast('Conversation cleared!');
             }
         });
-                    function updateAssistantMessageStatus(status) {
+
+        function updateAssistantMessageStatus(status) {
             const lastGroup = messagesArea.lastElementChild;
             if (lastGroup && lastGroup.classList.contains('assistant-group')) {
                 // Remove any existing status indicators
@@ -1140,7 +1244,8 @@
                 }
             }
         }
-                     askForm.addEventListener('submit', async (event) => {
+
+        askForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             const query = queryInput.value.trim();
             if (!query) return;
@@ -1283,5 +1388,26 @@
             }
         });
 
+        // Load Mermaid library dynamically if not already loaded
+        if (!window.mermaid) {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mermaid/9.4.3/mermaid.min.js';
+            script.onload = function() {
+                // Initialize mermaid with configuration
+                window.mermaid.initialize({
+                    startOnLoad: true,
+                    theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+                    securityLevel: 'loose'
+                });
+
+                // Re-render any existing mermaid diagrams
+                const mermaidDiagrams = document.querySelectorAll('.mermaid');
+                if (mermaidDiagrams.length > 0) {
+                    window.mermaid.init(undefined, mermaidDiagrams);
+                }
+            };
+            document.head.appendChild(script);
+        }
     </script>
 }
+
