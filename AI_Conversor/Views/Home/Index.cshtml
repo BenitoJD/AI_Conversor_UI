@@ -795,18 +795,75 @@
         });
 
         // Sanitize LLM output with HTML escaping and markdown processing
-        function sanitizeContent(text) {
+                function sanitizeContent(text) {
             const div = document.createElement('div');
             div.textContent = text;
             let sanitized = div.innerHTML
-                .replace(/</g, '<')
-                .replace(/>/g, '>');
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
 
             // Process markdown-style headings (## Heading)
             sanitized = sanitized.replace(/^#{1,6}\s+(.+)$/gm, '<strong>$1</strong>');
 
             // Process markdown-style bold (**text** or __text__)
             sanitized = sanitized.replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>');
+
+            // Process markdown-style italic (*text* or _text_)
+            sanitized = sanitized.replace(/(\*|_)(.*?)\1/g, '<em>$2</em>');
+
+            // TABLE HANDLING - Process markdown tables
+            sanitized = sanitized.replace(/^\|(.+)\|$/gm, function(match, content) {
+                // Skip processing separator rows for now, we'll handle them separately
+                if (content.trim().replace(/[- |:]/g, '') === '') {
+                    return match;
+                }
+
+                const cells = content.split('|').map(cell => cell.trim());
+                return '|' + cells.join('|') + '|';
+            });
+
+            // Convert markdown tables to HTML tables
+            sanitized = sanitized.replace(/(\|.+\|\n)(\|[-:| ]+\|\n)(\|.+\|(\n|$))+/g, function(tableMatch) {
+                const rows = tableMatch.trim().split('\n');
+
+                // Process the alignment row (second row with dashes and colons)
+                const alignmentRow = rows[1];
+                const alignments = alignmentRow.split('|').filter(cell => cell.trim().length > 0).map(cell => {
+                    cell = cell.trim();
+                    if (cell.startsWith(':') && cell.endsWith(':')) return 'center';
+                    if (cell.endsWith(':')) return 'right';
+                    return 'left';
+                });
+
+                // Build the HTML table
+                let tableHtml = '<div class="table-container"><table class="markdown-table">';
+
+                // Add header row
+                const headerCells = rows[0].split('|').filter(cell => cell.trim().length > 0);
+                tableHtml += '<thead><tr>';
+                headerCells.forEach((cell, index) => {
+                    const alignment = alignments[index] || 'left';
+                    tableHtml += `<th style="text-align: ${alignment}">${cell.trim()}</th>`;
+                });
+                tableHtml += '</tr></thead>';
+
+                // Add body rows
+                tableHtml += '<tbody>';
+                for (let i = 2; i < rows.length; i++) {
+                    if (!rows[i].trim()) continue;
+
+                    const bodyCells = rows[i].split('|').filter(cell => cell.trim().length > 0);
+                    tableHtml += '<tr>';
+                    bodyCells.forEach((cell, index) => {
+                        const alignment = alignments[index] || 'left';
+                        tableHtml += `<td style="text-align: ${alignment}">${cell.trim()}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                }
+                tableHtml += '</tbody></table></div>';
+
+                return tableHtml;
+            });
 
             // Detect code blocks and add special handling for them
             sanitized = sanitized.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, language, code) {
@@ -830,9 +887,69 @@
                 </div>`;
             });
 
+            // Convert line breaks
+            sanitized = sanitized.replace(/\n/g, '<br>');
+
             return sanitized;
         }
 
+        // Add this CSS to your stylesheet
+        const tableStyles = `
+        /* Table styling */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .markdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+            margin-bottom: 1rem;
+        }
+
+        .markdown-table th,
+        .markdown-table td {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .markdown-table th {
+            background-color: var(--muted-bg-color);
+            font-weight: bold;
+        }
+
+        .markdown-table tr:nth-child(even) {
+            background-color: var(--alt-row-color);
+        }
+
+        /* Dark mode variables */
+        [data-theme="dark"] {
+            --border-color: #444;
+            --muted-bg-color: #333;
+            --alt-row-color: #2a2a2a;
+        }
+
+        /* Light mode variables */
+        [data-theme="light"] {
+            --border-color: #ddd;
+            --muted-bg-color: #f5f5f5;
+            --alt-row-color: #f9f9f9;
+        }
+        `;
+
+        // Function to add CSS to the page
+        function addTableStyles() {
+            const styleElement = document.createElement('style');
+            styleElement.textContent = tableStyles;
+            document.head.appendChild(styleElement);
+        }
+
+        // Call this function when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            addTableStyles();
+        });
         // Message Handling
         function appendMessage(role, content, documents = []) {
             const messageGroup = document.createElement('div');
